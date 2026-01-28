@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(express.json());
 
-mongoose.connect('mongodb+srv://gyanasatyasai12_db_user:SAztmh5HcacByDBF@cluster0.x92qfuv.mongodb.net/').then(() => console.log('Connected to MongoDB')).catch(err => console.log(err));
+mongoose.connect('').then(() => console.log('Connected to MongoDB')).catch(err => console.log(err));
 
 const authenticateToken = (req,res,next)=>{
         const authHeader = req.headers['authorization'];

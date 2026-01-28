@@ -1,6 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const todo = require('./model');
+const ToDo = require('./model');
 const UserData = require('./User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 const app = express();
 app.use(express.json());
 
-mongoose.connect('password').then(() => console.log('Connected to MongoDB')).catch(err => console.log(err));
+mongoose.connect('mongodb+srv://gyanasatyasai12_db_user:SAztmh5HcacByDBF@cluster0.x92qfuv.mongodb.net/').then(() => console.log('Connected to MongoDB')).catch(err => console.log(err));
 
 const authenticateToken = (req,res,next)=>{
         const authHeader = req.headers['authorization'];
@@ -58,7 +58,7 @@ app.post("/signup", async (req,res)=>{
             if (!foundUser){
                 return res.status(401).json({ message: "Invalid credentials"})
             }
-             const salt = await bcrypt.genSalt(10);
+        
              const ismatch = await bcrypt.compare(password, foundUser.password);
              if (!ismatch){
                 return res.status(401).json({ message: "Invalis password"})
@@ -87,7 +87,7 @@ app.post("/signup", async (req,res)=>{
    app.post("/create_task",authenticateToken, async (req,res)=>{
     try{
       const {title,description}= req.body;
-      const newTODO = new todo({title,description,userId: req.user.id});
+      const newTODO = new ToDo({title,description,userId: req.user.id});
       await newTODO.save();
       return res.status(201).json({
         message: "TODO created successfully",
@@ -99,5 +99,61 @@ app.post("/signup", async (req,res)=>{
       return res.status(500).json({message: "Server error"});
     }
    });
+
+   app.get("/todos", authenticateToken, async (req,res)=>{
+    try{
+        const todos = await ToDo.find({ userId: req.user.id }).sort({ createdAt: -1 });
+        return res.status(200).json({
+            message: 'Todos fetched successfully',
+            todos
+        });
+    } 
+    catch (err) {
+        console.error('Todo fetch error:', err);
+        return res.status(500).json({ 'message' : 'Server Error'});
+    }
+
+   });
+
+ app.put('/todo/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description } = req.body;
+        const todo = await ToDo.findOne({ _id: id, userId: req.user.id });
+        if (!todo) {
+            return res.status(404).json({ 'message': 'Todo not found or access denied' });
+        }
+        todo.title = title || todo.title;
+        todo.description = description || todo.description;
+        await todo.save();
+        return res.status(200).json({
+            message: 'Todo updated successfully',
+            todo
+        });
+    } catch (err) {
+        console.error('Todo update error:', err);
+        return res.status(500).json({ 'message': 'Server Error' });
+    }
+});
+
+
+app.delete('/todo/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const todo = await ToDo.findOneAndDelete({ _id: id, userId: req.user.id });
+        if (!todo) {
+            return res.status(404).json({ 'message': 'Todo not found or access denied' });
+        }
+        return res.status(200).json({
+            message: 'Todo deleted successfully',
+            todo
+        });
+    } catch (err) {
+        console.error('Todo delete error:', err);
+        return res.status(500).json({ 'message': 'Server Error' });
+    }
+});
+
+  
 
     app.listen(3000, () =>console.log('server is running on http://localhost:3000'))
